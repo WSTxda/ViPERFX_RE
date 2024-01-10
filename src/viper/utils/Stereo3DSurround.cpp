@@ -28,14 +28,14 @@ void Stereo3DSurround::Process(float *samples, uint32_t size) {
     }
 
     if (remainder > 0) {
-        for (uint32_t i = pairs; i < pairs + remainder; i++) {
-            float a = samples[2 * i];
-            float b = samples[2 * i + 1];
+        for (uint32_t i = 4 * pairs; i < 2 * size; i += 2) {
+            float a = samples[i];
+            float b = samples[i + 1];
             float c = this->coeffLeft * (a + b);
             float d = this->coeffRight * (b - a);
 
-            samples[2 * i] = c - d;
-            samples[2 * i + 1] = c + d;
+            samples[i] = c - d;
+            samples[i + 1] = c + d;
         }
     }
 }

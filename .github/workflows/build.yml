@@ -142,7 +142,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: release-build
+          tag_name: release-actions
           release_name: ViPER4Android Module
           draft: true
           prerelease: false

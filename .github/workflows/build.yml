@@ -3,7 +3,7 @@ name: build
 on: [push, pull_request]
 
 env:
-  NDK_VERSION: 25.2.9519653
+  NDK_VERSION: 27.0.12077973
   MIN_SDK_VERSION: 21
 
 jobs:
@@ -15,35 +15,57 @@ jobs:
         abi: ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
 
     steps:
+      # Checkout the repository to access the source code
       - uses: actions/checkout@v3
 
-      - name: Cache NDK
-        id: ndk-cache
-        uses: actions/cache@v3
-        with:
-          path: ndk
-          key: ndk-${{ env.NDK_VERSION }}
-          restore-keys: |
-            ndk-${{ env.NDK_VERSION }}
-
-      - name: Install NDK
-        if: steps.ndk-cache.outputs.cache-hit != 'true'
+      # Install Android SDK command-line tools
+      - name: Install Android SDK and NDK
         run: |
-          echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;${{ env.NDK_VERSION }}"
-          mv $ANDROID_HOME/ndk/${{ env.NDK_VERSION }} ndk
+          # Create the directory for SDK command-line tools
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          cd $HOME/android-sdk
 
+          # Download and unzip the command-line tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
+          unzip commandlinetools-linux-8512546_latest.zip -d cmdline-tools
+
+          # Rename the extracted directory to 'latest'
+          mv cmdline-tools/cmdline-tools cmdline-tools/latest
+
+          # Update PATH for sdkmanager
+          export PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH
+
+          # Accept licenses
+          yes | sdkmanager --licenses
+
+          # Install NDK
+          sdkmanager --install "ndk;${{ env.NDK_VERSION }}"
+
+          # Ensure the NDK is installed in a predictable location
+          NDK_PATH="$HOME/android-sdk/ndk/${{ env.NDK_VERSION }}"
+          if [ -d "$NDK_PATH" ]; then
+            echo "NDK is already installed at $NDK_PATH"
+          else
+            echo "NDK installation failed"
+            exit 1
+          fi
+
+      # Set the environment variable for the NDK path
       - name: Set NDK environment variable
-        run: echo "ANDROID_NDK_HOME=$(pwd)/ndk" >> $GITHUB_ENV
+        run: echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
 
+      # Configure and build the project using CMake
       - name: Build with CMake
         run: |
           cmake -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake -DANDROID_ABI=${{ matrix.abi }} -DANDROID_PLATFORM=android-${{ env.MIN_SDK_VERSION }} -DANDROID_ARM_NEON=TRUE .
           cmake --build . -- -j$(nproc)
 
+      # Rename the built shared library for each ABI
       - name: Rename output
         run: |
           mv libv4a_re.so libv4a_re_${{ matrix.abi }}.so
 
+      # Upload the compiled shared libraries as artifacts
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -55,6 +77,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout the repository to access the source code
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -65,23 +88,24 @@ jobs:
           name: compiled-binaries
           path: compiled/
 
-      # Prepare Magisk module directory by copying the necessary ABI files
+      # Prepare the directory structure for the module and copy the ABI-specific libraries
       - name: Prepare Magisk Module
         run: |
+          mkdir -p module/common/files
           for abi in armeabi-v7a arm64-v8a x86 x86_64; do
-            mkdir -p module/common/files
             cp compiled/libv4a_re_$abi.so module/common/files/
           done
 
-      # Zip the Magisk module
+      # Zip the module directory
       - name: Zip Magisk Module
         run: |
           cd module
           zip -r ../magisk_module.zip ./
 
-      # Upload the zipped Magisk module as an artifact
+      # Upload the zipped module as an artifact
       - name: Upload Magisk Module
         uses: actions/upload-artifact@v3
         with:
           name: V4A_Magisk_Module
           path: module
+          

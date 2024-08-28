@@ -115,9 +115,47 @@ jobs:
           cd module
           zip -r ../viper4android_module.zip ./
 
-      # Upload the zipped module as an artifact
+      # Upload the zip module as an artifact
       - name: Upload ViPER4Android Module
         uses: actions/upload-artifact@v4
         with:
           name: ViPER4Android_Module
           path: viper4android_module.zip
+
+  release:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository to access the source code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Download the zip module from the 'package' workflow
+      - name: Download ViPER4Android Module
+        uses: actions/download-artifact@v4
+        with:
+          name: ViPER4Android_Module
+          path: .
+
+      # Create a new release with module zip
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: release-build
+          release_name: ViPER4Android Module
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload the release asset
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: viper4android_module.zip
+          asset_name: viper4android_module.zip
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

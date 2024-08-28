@@ -69,7 +69,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: compiled-binaries
+          name: compiled-binaries-${{ matrix.abi }}
           path: libv4a_re_*.so
 
   package:
@@ -85,27 +85,39 @@ jobs:
       - name: Download compiled libraries
         uses: actions/download-artifact@v4
         with:
-          name: compiled-binaries
+          name: compiled-binaries-arm64-v8a
+          path: compiled/
+      - uses: actions/download-artifact@v4
+        with:
+          name: compiled-binaries-armeabi-v7a
+          path: compiled/
+      - uses: actions/download-artifact@v4
+        with:
+          name: compiled-binaries-x86
+          path: compiled/
+      - uses: actions/download-artifact@v4
+        with:
+          name: compiled-binaries-x86_64
           path: compiled/
 
       # Prepare the directory structure for the module and copy the ABI-specific libraries
-      - name: Prepare Magisk Module
+      - name: Prepare ViPER4Android Module
         run: |
           mkdir -p module/common/files
-          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
-            cp compiled/libv4a_re_$abi.so module/common/files/
-          done
+          cp compiled/libv4a_re_armeabi-v7a.so module/common/files/
+          cp compiled/libv4a_re_arm64-v8a.so module/common/files/
+          cp compiled/libv4a_re_x86.so module/common/files/
+          cp compiled/libv4a_re_x86_64.so module/common/files/
 
       # Zip the module directory
-      - name: Zip Magisk Module
+      - name: Zip ViPER4Android Module
         run: |
           cd module
-          zip -r ../magisk_module.zip ./
+          zip -r ../viper4android_module.zip ./
 
       # Upload the zipped module as an artifact
-      - name: Upload Magisk Module
+      - name: Upload ViPER4Android Module
         uses: actions/upload-artifact@v4
         with:
-          name: V4A_Magisk_Module
-          path: module
-          
+          name: ViPER4Android_Module
+          path: viper4android_module.zip

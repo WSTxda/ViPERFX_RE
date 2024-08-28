@@ -16,7 +16,7 @@ jobs:
 
     steps:
       # Checkout the repository to access the source code
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Install Android SDK command-line tools
       - name: Install Android SDK and NDK
@@ -67,7 +67,7 @@ jobs:
 
       # Upload the compiled shared libraries as artifacts
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: compiled-binaries
           path: libv4a_re_*.so
@@ -79,11 +79,11 @@ jobs:
     steps:
       # Checkout the repository to access the source code
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Download the compiled binaries from the 'build' workflow
       - name: Download compiled libraries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: compiled-binaries
           path: compiled/
@@ -104,7 +104,7 @@ jobs:
 
       # Upload the zipped module as an artifact
       - name: Upload Magisk Module
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: V4A_Magisk_Module
           path: module

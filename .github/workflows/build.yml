@@ -26,8 +26,8 @@ jobs:
           cd $HOME/android-sdk
 
           # Download and unzip the command-line tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip
-          unzip commandlinetools-linux-10406996_latest.zip -d cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
+          unzip commandlinetools-linux-8512546_latest.zip -d cmdline-tools
 
           # Rename the extracted directory to 'latest'
           mv cmdline-tools/cmdline-tools cmdline-tools/latest
@@ -41,7 +41,16 @@ jobs:
           # Install NDK
           sdkmanager --install "ndk;${{ env.NDK_VERSION }}"
 
-      # Set the environment variable for the NDK path using environment files
+          # Ensure the NDK is installed in a predictable location
+          NDK_PATH="$HOME/android-sdk/ndk/${{ env.NDK_VERSION }}"
+          if [ -d "$NDK_PATH" ]; then
+            echo "NDK is already installed at $NDK_PATH"
+          else
+            echo "NDK installation failed"
+            exit 1
+          fi
+
+      # Set the environment variable for the NDK path
       - name: Set NDK environment variable
         run: echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
 
@@ -148,3 +157,5 @@ jobs:
           asset_path: viper4android_module.zip
           asset_name: viper4android_module.zip
           asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

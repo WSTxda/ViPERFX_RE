@@ -3,7 +3,7 @@ name: build
 on: [push, pull_request]
 
 env:
-  NDK_VERSION: 27.0.12077973
+  NDK_VERSION: 27.2.12479018
   MIN_SDK_VERSION: 21
 
 jobs:
@@ -142,9 +142,9 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: v0.6.2
+          tag_name: v0.6.3
           release_name: ViPER4Android Module
-          draft: false
+          draft: true
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

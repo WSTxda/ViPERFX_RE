@@ -50,7 +50,7 @@ jobs:
             exit 1
           fi
 
-      # Set the environment variable for the NDK path
+      # Set the environment variable for the NDK path using environment files
       - name: Set NDK environment variable
         run: echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
 
@@ -157,5 +157,3 @@ jobs:
           asset_path: viper4android_module.zip
           asset_name: viper4android_module.zip
           asset_content_type: application/zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -20,4 +20,5 @@ Then you can build the project with `ninja` instead of `make`
 # Credits
 
 Zhuhang and ViPER520 for making ViPER4Android
-Martmists and Iscle for reverse-engineering
+Martmists and Iscle for reverse-engin
+Update software

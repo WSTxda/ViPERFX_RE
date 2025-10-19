@@ -138,24 +138,14 @@ jobs:
           path: .
 
       # Create a new release with module zip
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Create GitHub Release and Upload Asset
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v8.0
-          release_name: ViPER4Android Module
+          name: ViPER4Android Module
           draft: true
           prerelease: false
+          files: viper4android_module.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Upload the release asset
-      - name: Upload release asset
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: viper4android_module.zip
-          asset_name: viper4android_module.zip
-          asset_content_type: application/zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          

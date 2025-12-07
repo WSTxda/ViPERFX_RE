@@ -11,6 +11,27 @@ project("ViPER4Android")
 add_compile_definitions(VERSION_CODE=800)
 add_compile_definitions(VERSION_NAME="8.0")
 
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
+
+# the check is not needed for androidndk
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+add_compile_options("SHELL:-mllvm --enable-loop-flatten=true")
+add_compile_options("SHELL:-mllvm --enable-dfa-jump-thread=true")
+add_compile_options("SHELL:-mllvm --enable-loopinterchange=true")
+add_compile_options("SHELL:-mllvm --enable-constraint-elimination=true")
+add_compile_options("SHELL:-mllvm --extra-vectorizer-passes=true")
+endif()
+
+# affects quality?
+add_compile_options(-funsafe-math-optimizations)
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT CMAKE_IPO_AVAILABLE)
+if (CMAKE_IPO_AVAILABLE)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
 # FFTS
 #add_subdirectory(src/viper/ffts)
 
@@ -82,5 +103,4 @@ add_library(
         ${FILES})
 
 target_link_libraries(v4a_re log) # kissfft)
-target_compile_options(v4a_re PRIVATE -flto -O3 -DNDEBUG)
 #target_compile_options(v4afx_r PRIVATE -O2 -DNDEBUG -Wall -Wsign-conversion -Wno-unused-result -Wno-unneeded-internal-declaration -fstrict-aliasing -fvisibility=hidden -Wextra -Wno-unused-parameter)

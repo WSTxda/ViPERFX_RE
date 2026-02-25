@@ -116,7 +116,7 @@ jobs:
       - name: Zip ViPER4Android Module
         run: |
           cd module
-          zip -r ../viper4android_module.zip ./
+          zip -r9 ../viper4android_module.zip *
 
       # Upload the zip module as an artifact
       - name: Upload ViPER4Android Module

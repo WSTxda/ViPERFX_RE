@@ -21,7 +21,7 @@ jobs:
 
       - name: Install NDK
         run: |
-          yes | sdkmanager --install "ndk;${{ env.NDK_VERSION }}" > /dev/null
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --install "ndk;${{ env.NDK_VERSION }}" > /dev/null
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
 
       - name: Build with CMake

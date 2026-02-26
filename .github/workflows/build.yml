@@ -12,143 +12,62 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        abi: ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
+        abi: [armeabi-v7a, arm64-v8a, x86, x86_64]
 
     steps:
-      # Checkout the repository to access the source code
       - uses: actions/checkout@v4
 
-      # Install Android SDK command-line tools
-      - name: Install Android SDK and NDK
+      - name: Install NDK
         run: |
-          # Create the directory for SDK command-line tools
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          cd $HOME/android-sdk
+          yes | sdkmanager --install "ndk;${{ env.NDK_VERSION }}" > /dev/null
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
 
-          # Download and unzip the command-line tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
-          unzip commandlinetools-linux-8512546_latest.zip -d cmdline-tools
-
-          # Rename the extracted directory to 'latest'
-          mv cmdline-tools/cmdline-tools cmdline-tools/latest
-
-          # Update PATH for sdkmanager
-          export PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$PATH
-
-          # Accept licenses
-          yes | sdkmanager --licenses
-
-          # Install NDK
-          sdkmanager --install "ndk;${{ env.NDK_VERSION }}"
-
-          # Ensure the NDK is installed in a predictable location
-          NDK_PATH="$HOME/android-sdk/ndk/${{ env.NDK_VERSION }}"
-          if [ -d "$NDK_PATH" ]; then
-            echo "NDK is already installed at $NDK_PATH"
-          else
-            echo "NDK installation failed"
-            exit 1
-          fi
-
-      # Set the environment variable for the NDK path
-      - name: Set NDK environment variable
-        run: echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
-
-      # Configure and build the project using CMake
       - name: Build with CMake
         run: |
-          cmake -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake -DANDROID_ABI=${{ matrix.abi }} -DANDROID_PLATFORM=android-${{ env.MIN_SDK_VERSION }} -DANDROID_ARM_NEON=TRUE .
+          cmake \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=${{ matrix.abi }} \
+            -DANDROID_PLATFORM=android-${{ env.MIN_SDK_VERSION }} \
+            -DANDROID_ARM_NEON=TRUE \
+            -DCMAKE_BUILD_TYPE=Release \
+            .
           cmake --build . -- -j$(nproc)
-
-      # Rename the built shared library for each ABI
-      - name: Rename output
-        run: |
           mv libv4a_re.so libv4a_re_${{ matrix.abi }}.so
 
-      # Upload the compiled shared libraries as artifacts
-      - name: Upload artifacts
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: compiled-binaries-${{ matrix.abi }}
-          path: libv4a_re_*.so
+          path: libv4a_re_${{ matrix.abi }}.so
+          if-no-files-found: error
 
   package:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository to access the source code
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Download the compiled binaries from the 'build' workflow
-      - name: Download compiled libraries
+      - name: Download all compiled libraries
         uses: actions/download-artifact@v4
         with:
-          name: compiled-binaries-arm64-v8a
+          pattern: compiled-binaries-*
           path: compiled/
-      - uses: actions/download-artifact@v4
-        with:
-          name: compiled-binaries-armeabi-v7a
-          path: compiled/
-      - uses: actions/download-artifact@v4
-        with:
-          name: compiled-binaries-x86
-          path: compiled/
-      - uses: actions/download-artifact@v4
-        with:
-          name: compiled-binaries-x86_64
-          path: compiled/
+          merge-multiple: true
 
-      # Prepare the directory structure for the module and copy the ABI-specific libraries
-      - name: Prepare ViPER4Android Module
+      - name: Prepare and zip module
         run: |
           mkdir -p module/common/files
-          cp compiled/libv4a_re_armeabi-v7a.so module/common/files/
-          cp compiled/libv4a_re_arm64-v8a.so module/common/files/
-          cp compiled/libv4a_re_x86.so module/common/files/
-          cp compiled/libv4a_re_x86_64.so module/common/files/
-
-      # Zip the module directory
-      - name: Zip ViPER4Android Module
-        run: |
+          cp compiled/libv4a_re_*.so module/common/files/
           cd module
-          zip -r9 ../viper4android_module.zip *
+          zip -r9 ../ViPER4Android_Module.zip *
 
-      # Upload the zip module as an artifact
-      - name: Upload ViPER4Android Module
+      - name: Upload module zip
         uses: actions/upload-artifact@v4
         with:
           name: ViPER4Android_Module
-          path: viper4android_module.zip
-
-  release:
-    needs: package
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout the repository to access the source code
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Download the zip module from the 'package' workflow
-      - name: Download ViPER4Android Module
-        uses: actions/download-artifact@v4
-        with:
-          name: ViPER4Android_Module
-          path: .
-
-      # Create a new release with module zip
-      - name: Create GitHub Release and Upload Asset
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v8.0
-          name: ViPER4Android Module
-          draft: true
-          prerelease: false
-          files: viper4android_module.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+          path: ViPER4Android_Module.zip
+          if-no-files-found: error
+          retention-days: 30
